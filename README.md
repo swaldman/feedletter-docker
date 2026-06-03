@@ -66,9 +66,12 @@ Practically, that means:
    docker compose run --rm feedletter set-config --web-daemon-interface 0.0.0.0
 
    # Tell feedletter its public URL, so the links it emits are correct.
+   # Use your ACTUAL domain literally here. Do NOT write "$FEEDLETTER_DOMAIN":
+   # the variable in .env is read by Docker Compose, not exported into your
+   # shell, so it would expand to an empty string and store an empty hostname.
    docker compose run --rm feedletter set-config \
      --web-api-protocol https \
-     --web-api-host-name "$FEEDLETTER_DOMAIN"
+     --web-api-host-name feedletter.example.com
    ```
 
 5. **Add feeds and define subscribables** (examples — see `--help` for each):
