@@ -1,0 +1,21 @@
+# Automatic HTTPS via Let's Encrypt.
+#
+# On first start Caddy obtains a certificate for $FEEDLETTER_DOMAIN over ACME
+# (it needs public DNS pointing here and ports 80/443 reachable) and renews it
+# automatically thereafter. Issued certs are stored in the caddy_data volume.
+
+{
+	# ACME notification address (optional but recommended). Set ACME_EMAIL in .env.
+	email {$ACME_EMAIL}
+
+	# While testing, uncomment to use Let's Encrypt's staging CA and avoid
+	# hitting production rate limits. Comment out again for a real cert.
+	# acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
+}
+
+{$FEEDLETTER_DOMAIN} {
+	# feedletter's web daemon listens on 8024 inside the stack.
+	# NOTE: it must be configured to bind 0.0.0.0, not 127.0.0.1:
+	#   docker compose run --rm feedletter set-config --web-daemon-interface 0.0.0.0
+	reverse_proxy feedletter:8024
+}

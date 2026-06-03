@@ -1,0 +1,5 @@
+out
+
+# Local secrets and environment -- never commit these.
+.env
+secrets/feedletter-secrets.properties

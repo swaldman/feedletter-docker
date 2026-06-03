@@ -1,0 +1,65 @@
+# feedletter, in three containers:
+#
+#   db         - PostgreSQL, the system of record
+#   feedletter - the service (daemon + web API), built from this directory
+#   caddy      - TLS-terminating reverse proxy with automatic Let's Encrypt certs
+#
+# Copy .env.sample to .env and edit it before running. First-run bootstrap
+# steps (db-init, set-config) are in README.md.
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: feedletter
+      POSTGRES_DB: feedletter
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      # Daemon waits for this before connecting; avoids a startup race.
+      test: ["CMD-SHELL", "pg_isready -U feedletter -d feedletter"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  feedletter:
+    build: .
+    restart: on-failure
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      # Secrets file mounted read-only. It MUST be chmod 600 on the host
+      # (feedletter rejects looser permissions). See README.md.
+      - ./secrets/feedletter-secrets.properties:/etc/feedletter/feedletter-secrets.properties:ro
+    # Override per-invocation for admin commands:
+    #   docker compose run --rm feedletter db-init
+    #   docker compose run --rm feedletter add-feed https://example.com/feed.xml
+    command: ["daemon"]
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    # Opt-in: only starts when the "proxy" profile is active
+    # (prod: `docker compose --profile proxy up -d`). Local testing omits it.
+    profiles: ["proxy"]
+    depends_on:
+      - feedletter
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      # Used by Caddyfile. Set to your public hostname in .env.
+      FEEDLETTER_DOMAIN: ${FEEDLETTER_DOMAIN:?set FEEDLETTER_DOMAIN in .env}
+      ACME_EMAIL: ${ACME_EMAIL:-}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data       # issued certs + ACME account key live here -- keep it!
+      - caddy_config:/config
+
+volumes:
+  pg_data:
+  caddy_data:
+  caddy_config:

@@ -1,0 +1,19 @@
+#!/bin/bash
+
+MAINCMD="$0"
+FEEDLETTER_DIR="$(dirname $MAINCMD)"
+EXECNAME="$(basename $MAINCMD)"
+
+cd "$FEEDLETTER_DIR"
+
+if [[ "$EXECNAME" == "feedletter-style" ]]; then
+    # see https://superuser.com/a/186304
+    if [[ "$*" == *"--to"* ]]; then
+        FEEDLETTER_STYLE=true ./mill --no-daemon --ticker=false runMain PreMain "$@"
+    else
+        FEEDLETTER_STYLE=true ./mill --no-daemon --ticker=false --watch runMainBackground PreMain "$@"
+    fi
+else
+    echo "Expected this command to be 'feedletter-style'."
+fi
+

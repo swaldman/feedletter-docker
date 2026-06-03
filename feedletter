@@ -1,0 +1,36 @@
+#!/bin/bash
+
+# Host-side helper for running feedletter via Mill (handy for quick admin
+# commands or the edit-subscribable flow without building the image).
+#
+# NOTE: there is no `daemon --fork` path here. This repo's build does not use
+# mill-daemon, so the daemon only runs in the FOREGROUND. For a supervised
+# background service, use the container (docker compose ... up -d) instead.
+
+MAINCMD="$0"
+FEEDLETTER_DIR="$(dirname $MAINCMD)"
+EXECNAME="$(basename $MAINCMD)"
+
+cd "$FEEDLETTER_DIR"
+
+case $1 in
+    --secrets)
+        SUBCMD="$3"
+        ;;
+    --secrets*)
+        SUBCMD="$2"
+        ;;
+    *)
+        SUBCMD="$1"
+        ;;
+esac
+
+if [[ "$EXECNAME" == "feedletter" ]]; then
+    if [[ "$SUBCMD" == "edit-subscribable" ]]; then  # we need native streams...
+        ./mill --no-daemon --ticker=false runMainLocal PreMain "$@"
+    else
+        ./mill --no-daemon --ticker=false runMain PreMain "$@"
+    fi
+else
+    echo "Expected this command to be 'feedletter'."
+fi

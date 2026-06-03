@@ -1,0 +1,49 @@
+//| mill-version: 1.0.6
+//| mill-jvm-version: 21
+//| mvnDeps: ["com.mchange::untemplate-mill:0.2.0"]
+//+---------------------------------------------------------------------------------------------------------
+package build
+
+import mill.*, scalalib.*
+
+import untemplate.mill._
+
+object `package` extends UntemplateModule {
+  def scalaVersion = "3.3.7"
+
+  override def scalacOptions = Task { Seq("-deprecation") }
+
+  // The container runs the assembled fat-jar directly (java -jar ...) in the
+  // foreground, as PID 1, supervised by Docker's restart policy. We therefore
+  // do NOT use mill-daemon: no forking runDaemon* tasks and no PID file.
+  override def mainClass = Some("PreMain")
+
+  // ZIO / Netty / Tapir bring overlapping META-INF/services and similar
+  // resources across jars. Concatenate the ones that must merge, and drop
+  // signatures/manifests that are meaningless (and breakage-prone) in a fat jar.
+  override def assemblyRules = super.assemblyRules ++ Seq(
+    mill.scalalib.Assembly.Rule.AppendPattern("META-INF/services/.*"),
+    mill.scalalib.Assembly.Rule.ExcludePattern("META-INF/.*\\.(SF|DSA|RSA)"),
+    mill.scalalib.Assembly.Rule.ExcludePattern("META-INF/native-image/.*"),
+  )
+
+  def mvnDeps = Seq(
+    mvn"com.mchange::feedletter:0.2.3"
+  )
+
+  // we'll build an index!
+  override def untemplateIndexNameFullyQualified : Option[String] = Some("com.mchange.feedletter.UserUntemplates")
+
+  override def untemplateSelectCustomizer: untemplate.Customizer.Selector = { key =>
+    var out = untemplate.Customizer.empty
+
+    // to customize, examine key and modify the customer
+    // with out = out.copy=...
+    //
+    // e.g. out = out.copy(extraImports=Seq("draft.*"))
+
+    out = out.copy(extraImports=Seq("com.mchange.feedletter.*","com.mchange.feedletter.style.*"))
+
+    out
+  }
+}

@@ -1,0 +1,10 @@
+# Keep the build context (and image layers) small and reproducible.
+out
+.git
+.metals
+.bsp
+.scala-build
+
+# Never copy host secrets or local env into the image build context.
+secrets/feedletter-secrets.properties
+.env
