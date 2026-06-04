@@ -26,7 +26,11 @@ services:
 
   feedletter:
     build: .
-    restart: on-failure
+    # unless-stopped: comes back on host reboot (like db/caddy) AND keeps
+    # retrying if it exits -- which also rides out the startup race against
+    # Postgres after a reboot (see note below; depends_on ordering does NOT
+    # apply to daemon-driven restarts, only to `docker compose up`).
+    restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
