@@ -31,6 +31,13 @@ RUN ./mill assembly
 # ---------------------------------------------------------------------------
 FROM eclipse-temurin:21-jre AS run
 
+# A terminal editor for interactive admin commands. `edit-subscribable` shells
+# out to $EDITOR on a temp file, so the editor binary must exist IN THE IMAGE
+# (a host-side EDITOR is invisible to the container). nano is the friendly
+# default; swap for vim-tiny if you prefer.
+RUN apt-get update && apt-get install -y --no-install-recommends nano \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 COPY --from=build /build/out/assembly.dest/out.jar /app/feedletter.jar
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
@@ -38,6 +45,9 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 
 # feedletter looks here for its secrets file (also overridable via FEEDLETTER_SECRETS).
 ENV FEEDLETTER_SECRETS=/etc/feedletter/feedletter-secrets.properties
+
+# Used by `edit-subscribable`. Harmless for the daemon, which ignores it.
+ENV EDITOR=nano
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 # Default to running the service. Override for one-off admin commands, e.g.:
