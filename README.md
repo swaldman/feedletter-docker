@@ -101,11 +101,27 @@ docker compose run --rm feedletter list-subscribables
 docker compose run --rm feedletter export-subscribers
 ```
 
-`edit-subscribable` is interactive; run it with a TTY:
+`edit-subscribable` is interactive; run it with a TTY. The image ships `nano` as
+`$EDITOR`, so it opens an editor inside the container:
 
 ```bash
 docker compose run --rm -it feedletter edit-subscribable
 ```
+
+## Deploying changes
+
+After editing untemplates (`untemplate/`) or customizers (`src/`), rebuild the image
+and recreate the running container from it:
+
+```bash
+./rebuild-redeploy
+```
+
+That wraps `docker compose --profile proxy up -d --build` (and `cd`s to the repo first,
+so it works from any directory). Note this is `up --build`, **not** `docker compose
+restart`: only rebuilding the image and recreating the container picks up your changes;
+`restart` would re-run the old one. Extra args are forwarded, e.g. `./rebuild-redeploy
+--no-cache`.
 
 ## Why these conventions (gotchas worth knowing)
 
