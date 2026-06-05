@@ -31,7 +31,8 @@ Practically, that means:
 
 - Docker with the Compose plugin.
 - For a *publicly trusted* certificate: a domain whose DNS points at this host, with
-  inbound ports **80 and 443** reachable. (Without that, see "Local testing" below.)
+  inbound ports **80 and 443** reachable. (If you terminate TLS elsewhere, see
+  "Running behind your own TLS / reverse proxy" below.)
 
 ## Setup
 
@@ -81,14 +82,14 @@ Practically, that means:
    docker compose run --rm feedletter define-email-subscribable --help
    ```
 
-6. **Start the stack.** The `caddy` service is gated behind the `proxy` profile, so
-   the production stack (with TLS) is started with:
+6. **Start the stack.**
 
    ```bash
-   docker compose --profile proxy up -d
+   docker compose up -d
    ```
 
-   On first start Caddy obtains a TLS certificate for `FEEDLETTER_DOMAIN`. Watch with
+   This brings up all three services (db + feedletter + caddy). On first start Caddy
+   obtains a TLS certificate for `FEEDLETTER_DOMAIN`; watch with
    `docker compose logs -f caddy`.
 
 ## Running admin commands
@@ -117,7 +118,7 @@ and recreate the running container from it:
 ./rebuild-redeploy
 ```
 
-That wraps `docker compose --profile proxy up -d --build` (and `cd`s to the repo first,
+That wraps `docker compose up -d --build` (and `cd`s to the repo first,
 so it works from any directory). Note this is `up --build`, **not** `docker compose
 restart`: only rebuilding the image and recreating the container picks up your changes;
 `restart` would re-run the old one. Extra args are forwarded, e.g. `./rebuild-redeploy
@@ -145,37 +146,34 @@ restart`: only rebuilding the image and recreating the container picks up your c
 - **Keep the `caddy_data` volume.** It holds the issued certificate and ACME account
   key. Destroying it forces re-issuance and can hit Let's Encrypt rate limits.
 
-## Local testing (no domain, no TLS)
+## Running behind your own TLS / reverse proxy
 
-For experimenting on your own machine, skip Caddy entirely and reach feedletter
-directly. The `docker-compose.local.yml` overlay publishes the web daemon to
-`localhost:8024`; omitting `--profile proxy` keeps the `caddy` service down.
+The default stack terminates TLS with the bundled Caddy service. If your server
+already has its own TLS terminator (nginx, Traefik, a cloud load balancer, etc.),
+you can run feedletter without Caddy and let that proxy front it. In
+`docker-compose.yml`:
+
+1. **Comment out the entire `caddy:` service.**
+2. **Uncomment the `ports:` block under `feedletter`** so the web daemon is published
+   on the host loopback (`127.0.0.1:8024`) for your proxy to reach.
+
+Then point feedletter at its public URL and bind all interfaces inside the container
+(the published port forwards to the container, so the process must listen on
+`0.0.0.0`, not `127.0.0.1`):
 
 ```bash
-# bootstrap (same as prod, but with the local overlay and no proxy profile)
-docker compose -f docker-compose.yml -f docker-compose.local.yml run --rm feedletter db-init
-docker compose -f docker-compose.yml -f docker-compose.local.yml \
-  run --rm feedletter set-config --web-daemon-interface 0.0.0.0
-docker compose -f docker-compose.yml -f docker-compose.local.yml \
-  run --rm feedletter set-config --web-api-protocol http --web-api-host-name localhost
-
-# run it
-docker compose -f docker-compose.yml -f docker-compose.local.yml up
+docker compose run --rm feedletter set-config --web-daemon-interface 0.0.0.0
+docker compose run --rm feedletter set-config \
+  --web-api-protocol https --web-api-host-name your.domain.example
+docker compose up -d
 ```
 
-Then open <http://localhost:8024/>. You still need a `.env` (any non-empty
-`FEEDLETTER_DOMAIN` is fine since Caddy isn't started) and a `chmod 600` secrets
-file. `--web-daemon-interface 0.0.0.0` is required even locally: the published port
-forwards to the container, and the process must bind all interfaces *inside* the
-container to receive it.
-
-If instead you want to exercise the *real* TLS path locally, start with `--profile
-proxy` and either set `FEEDLETTER_DOMAIN=localhost` (Caddy serves its own internal CA
-cert — your browser warns unless you trust Caddy's root) or uncomment the `acme_ca`
-staging line in `Caddyfile`.
+Configure your external proxy to forward to `127.0.0.1:8024`. This same setup (minus
+TLS) also serves a quick domainless trial: leave the protocol as `http`, set the
+host name to `localhost`, and reach feedletter directly at <http://localhost:8024/>.
 
 ## Updating feedletter
 
 Bump the version in `build.mill` (`mvn"com.mchange::feedletter:<version>"`), then
-`docker compose build && docker compose --profile proxy up -d`. Database schema
-changes are applied with `docker compose run --rm feedletter db-migrate`.
+`./rebuild-redeploy` (or `docker compose up -d --build`). Database schema changes are
+applied with `docker compose run --rm feedletter db-migrate`.

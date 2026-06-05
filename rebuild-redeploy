@@ -2,13 +2,13 @@
 set -euo pipefail
 
 # Rebuild the feedletter image and recreate the running container from it
-# (i.e. deploy code/untemplate changes). Runs the full prod stack via the
-# `proxy` profile. NOTE: this is `up --build`, not `docker compose restart` --
-# it picks up a freshly built image, which `restart` would not.
+# (i.e. deploy code/untemplate changes). NOTE: this is `up --build`, not
+# `docker compose restart` -- it picks up a freshly built image, which
+# `restart` would not.
 #
 # Extra args are forwarded, e.g.:  ./rebuild-redeploy feedletter
 #                                  ./rebuild-redeploy --no-cache
 
 cd "$(dirname "$0")"
 
-docker compose --profile proxy up -d --build "$@"
+docker compose up -d --build "$@"

@@ -38,17 +38,25 @@ services:
       # Secrets file mounted read-only. It MUST be chmod 600 on the host
       # (feedletter rejects looser permissions). See README.md.
       - ./secrets/feedletter-secrets.properties:/etc/feedletter/feedletter-secrets.properties:ro
+    # By default feedletter is NOT published to the host -- only the caddy
+    # service reaches it over the internal network. If you terminate TLS with
+    # your own reverse proxy instead (and comment out the caddy service below),
+    # uncomment this to expose feedletter on the host loopback for that proxy:
+    # ports:
+    #   - "127.0.0.1:8024:8024"
     # Override per-invocation for admin commands:
     #   docker compose run --rm feedletter db-init
     #   docker compose run --rm feedletter add-feed https://example.com/feed.xml
     command: ["daemon"]
 
+  # Caddy terminates TLS (automatic Let's Encrypt certs) and reverse-proxies to
+  # feedletter. This is the default deployment. If you instead terminate TLS with
+  # your OWN reverse proxy (nginx, a cloud load balancer, etc.), comment out this
+  # entire `caddy:` service and uncomment the `ports:` block under `feedletter`
+  # above. See "Running behind your own TLS / reverse proxy" in README.md.
   caddy:
     image: caddy:2
     restart: unless-stopped
-    # Opt-in: only starts when the "proxy" profile is active
-    # (prod: `docker compose --profile proxy up -d`). Local testing omits it.
-    profiles: ["proxy"]
     depends_on:
       - feedletter
     ports:
