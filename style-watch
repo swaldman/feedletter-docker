@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")"
+
+# Live untemplate-styling loop -- the containerized equivalent of `feedletter-style`.
+#
+# Starts the on-demand `style` service (profile-gated, so it's never part of the
+# running stack), bind-mounting your untemplate/ and src/ so that editing them on the
+# host triggers a live recompile (Mill -w) and restarts the preview server. Renders
+# against the real database, so it brings up `db` if it isn't already running.
+#
+# Pass a feedletter-style subcommand and its options, e.g.:
+#   ./style-watch compose-single   --subscribable-name my-list
+#   ./style-watch compose-multiple --subscribable-name my-list
+#   ./style-watch --help                       # list style subcommands
+#
+# The rendered untemplate is served at http://127.0.0.1:8080/ . On a remote server,
+# tunnel it to your laptop first:
+#   ssh -L 8080:127.0.0.1:8080 you@server      # then browse http://localhost:8080/
+#
+# Ctrl-C stops the loop and removes the throwaway container.
+#
+# NOTE: this is the live *serve* preview. Don't pass --from/--to here -- under Mill -w
+# a mail destination would re-send on every edit. (Mail previews are a separate path.)
+
+docker compose --profile style run --rm --service-ports style "$@"

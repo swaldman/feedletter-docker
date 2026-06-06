@@ -73,6 +73,40 @@ services:
       - caddy_data:/data       # issued certs + ACME account key live here -- keep it!
       - caddy_config:/config
 
+  # On-demand untemplate-styling dev loop (the containerized `feedletter-style`).
+  # Gated behind the "style" profile, so it NEVER starts with `docker compose up` --
+  # invoke it explicitly via ./style-watch. Built from the toolchain (build) stage so
+  # Mill + sources are present, and bind-mounts untemplate/ + src/ so host edits are
+  # recompiled live (Mill -w, confirmed working over the bind mount). Renders against
+  # the real database, so it depends on db and reads the same secrets file.
+  style:
+    build:
+      context: .
+      target: build
+    profiles: ["style"]
+    # Run a real init (tini) as PID 1, which forwards SIGINT/SIGTERM to Mill.
+    # Without this, Mill runs as PID 1 and the kernel's PID-1 signal protection
+    # makes Ctrl-C (and `docker stop`'s SIGTERM) get ignored -- you'd be unable to
+    # stop the watch loop cleanly. tini relays the signal so Ctrl-C just works.
+    init: true
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      FEEDLETTER_SECRETS: /etc/feedletter/feedletter-secrets.properties
+      FEEDLETTER_STYLE: "true"          # routes PreMain -> StyleMain
+    volumes:
+      - ./untemplate:/build/untemplate  # live-editable; Mill -w watches these
+      - ./src:/build/src
+      - ./secrets/feedletter-secrets.properties:/etc/feedletter/feedletter-secrets.properties:ro
+    ports:
+      # Preview server. Bound to host loopback only -- on a remote box, reach it via an
+      # SSH tunnel (see ./style-watch). StyleMain serves 0.0.0.0:8080 inside the container.
+      - "127.0.0.1:8080:8080"
+    # ./style-watch appends a feedletter-style subcommand (e.g. compose-single ...),
+    # which Mill runs in the background and re-runs on every source change.
+    entrypoint: ["./mill", "-w", "runMainBackground", "PreMain"]
+
 volumes:
   pg_data:
   caddy_data:
