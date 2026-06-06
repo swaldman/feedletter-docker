@@ -155,7 +155,11 @@ you can run feedletter without Caddy and let that proxy front it. In
 
 1. **Comment out the entire `caddy:` service.**
 2. **Uncomment the `ports:` block under `feedletter`** so the web daemon is published
-   on the host loopback (`127.0.0.1:8024`) for your proxy to reach.
+   on the host loopback for your proxy to reach. The host-side port is set by
+   `FEEDLETTER_HTTP_PORT` in `.env` (default `8024`); choose one that doesn't collide
+   with anything else on the host. (Only the host side is configurable — the container
+   side stays `8024`, feedletter's `web-daemon-port`. This binds to `127.0.0.1`, the
+   *host's* loopback, so the port is reachable only by a proxy on the same machine.)
 
 Then point feedletter at its public URL and bind all interfaces inside the container
 (the published port forwards to the container, so the process must listen on
@@ -168,9 +172,10 @@ docker compose run --rm feedletter set-config \
 docker compose up -d
 ```
 
-Configure your external proxy to forward to `127.0.0.1:8024`. This same setup (minus
-TLS) also serves a quick domainless trial: leave the protocol as `http`, set the
-host name to `localhost`, and reach feedletter directly at <http://localhost:8024/>.
+Configure your external proxy to forward to `127.0.0.1:${FEEDLETTER_HTTP_PORT}`. This
+same setup (minus TLS) also serves a quick domainless trial: leave the protocol as
+`http`, set the host name to `localhost`, and reach feedletter directly at
+<http://localhost:8024/> (or whatever port you chose).
 
 ## Updating feedletter
 

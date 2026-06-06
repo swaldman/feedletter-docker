@@ -41,9 +41,11 @@ services:
     # By default feedletter is NOT published to the host -- only the caddy
     # service reaches it over the internal network. If you terminate TLS with
     # your own reverse proxy instead (and comment out the caddy service below),
-    # uncomment this to expose feedletter on the host loopback for that proxy:
+    # uncomment this to expose feedletter on the host loopback for that proxy.
+    # Choose the host-side port via FEEDLETTER_HTTP_PORT in .env (the container
+    # side stays 8024, feedletter's web-daemon-port); point your proxy at it.
     # ports:
-    #   - "127.0.0.1:8024:8024"
+    #   - "127.0.0.1:${FEEDLETTER_HTTP_PORT:-8024}:8024"
     # Override per-invocation for admin commands:
     #   docker compose run --rm feedletter db-init
     #   docker compose run --rm feedletter add-feed https://example.com/feed.xml
