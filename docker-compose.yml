@@ -75,7 +75,7 @@ services:
 
   # On-demand untemplate-styling dev loop (the containerized `feedletter-style`).
   # Gated behind the "style" profile, so it NEVER starts with `docker compose up` --
-  # invoke it explicitly via ./style-watch. Built from the toolchain (build) stage so
+  # invoke it explicitly via ./feedletter-style-docker. Built from the toolchain (build) stage so
   # Mill + sources are present, and bind-mounts untemplate/ + src/ so host edits are
   # recompiled live (Mill -w, confirmed working over the bind mount). Renders against
   # the real database, so it depends on db and reads the same secrets file.
@@ -101,9 +101,9 @@ services:
       - ./secrets/feedletter-secrets.properties:/etc/feedletter/feedletter-secrets.properties:ro
     ports:
       # Preview server. Bound to host loopback only -- on a remote box, reach it via an
-      # SSH tunnel (see ./style-watch). StyleMain serves 0.0.0.0:8080 inside the container.
+      # SSH tunnel (see ./feedletter-style-docker). StyleMain serves 0.0.0.0:8080 inside the container.
       - "127.0.0.1:8080:8080"
-    # ./style-watch appends a feedletter-style subcommand (e.g. compose-single ...),
+    # ./feedletter-style-docker appends a feedletter-style subcommand (e.g. compose-single ...),
     # which Mill runs in the background and re-runs on every source change.
     entrypoint: ["./mill", "-w", "runMainBackground", "PreMain"]
 

@@ -126,17 +126,17 @@ restart`: only rebuilding the image and recreating the container picks up your c
 
 ## Styling untemplates (live preview)
 
-For the fast edit-view cycle when designing untemplates, use `./style-watch` — the
+For the fast edit-view cycle when designing untemplates, use `./feedletter-style-docker` — the
 containerized equivalent of `feedletter-style`. It starts an on-demand `style` service
 that bind-mounts your `untemplate/` and `src/` and watches them with Mill (`-w`):
 every save recompiles and restarts a preview server, so you just refresh the browser.
 
 ```bash
-./style-watch compose-single --subscribable-name my-list
+./feedletter-style-docker compose-single --subscribable-name my-list
 ```
 
 Pass any `feedletter-style` subcommand (`compose-single`, `compose-multiple`, `confirm`,
-`status-change`, `removal-notification`); `./style-watch --help` lists them. It renders
+`status-change`, `removal-notification`); `./feedletter-style-docker --help` lists them. It renders
 against the **real database**, so the named subscribable must already be defined, and it
 will start `db` if it isn't running. Ctrl-C stops it (the container is removed on exit).
 
@@ -150,7 +150,7 @@ ssh -L 8080:127.0.0.1:8080 you@server     # then browse http://localhost:8080/
 
 Notes:
 - The `style` service is **profile-gated** (`profiles: ["style"]`), so it never starts
-  with `docker compose up` — only `./style-watch` (which adds `--profile style`) runs it.
+  with `docker compose up` — only `./feedletter-style-docker` (which adds `--profile style`) runs it.
 - It builds from the toolchain (`build`) stage, so the first run compiles; subsequent
   recompiles are incremental and fast.
 - This is the live *serve* preview. Don't pass `--from/--to` to it — under `-w` a mail

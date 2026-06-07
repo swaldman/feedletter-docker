@@ -10,9 +10,9 @@ cd "$(dirname "$0")"
 # against the real database, so it brings up `db` if it isn't already running.
 #
 # Pass a feedletter-style subcommand and its options, e.g.:
-#   ./style-watch compose-single   --subscribable-name my-list
-#   ./style-watch compose-multiple --subscribable-name my-list
-#   ./style-watch --help                       # list style subcommands
+#   ./feedletter-style-docker compose-single   --subscribable-name my-list
+#   ./feedletter-style-docker compose-multiple --subscribable-name my-list
+#   ./feedletter-style-docker --help                       # list style subcommands
 #
 # The rendered untemplate is served at http://127.0.0.1:8080/ . On a remote server,
 # tunnel it to your laptop first:
