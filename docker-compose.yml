@@ -18,7 +18,10 @@ services:
     volumes:
       - pg_data:/var/lib/postgresql/data
     healthcheck:
-      # Daemon waits for this before connecting; avoids a startup race.
+      # feedletter's `depends_on: { condition: service_healthy }` gates its start on
+      # this probe, so the feedletter daemon won't try to connect before Postgres is
+      # accepting connections. (Only governs `docker compose up`; the reboot race is
+      # handled by feedletter's restart policy.)
       test: ["CMD-SHELL", "pg_isready -U feedletter -d feedletter"]
       interval: 5s
       timeout: 5s

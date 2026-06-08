@@ -75,14 +75,32 @@ Practically, that means:
      --web-api-host-name feedletter.example.com
    ```
 
-5. **Add feeds and define subscribables** (examples — see `--help` for each):
+5. **Generate the starter email templates, and bake them in.** Do this **before**
+   defining any email subscribable — it's what your newsletters will be styled from:
+
+   ```bash
+   docker compose run --rm -v "$PWD/untemplate:/app/untemplate" feedletter generate-starter-untemplates
+   docker compose build      # compile the scaffolded templates into the image
+   ```
+
+   This writes editable copies of feedletter's default email untemplates (including
+   `style.css.untemplate`) to `untemplate/local/subscription/email/`, then bakes them into
+   the image. Email subscribables you define from here on **bind to these local templates**,
+   so you can restyle later just by editing them and running `./rebuild-redeploy` — no need
+   to touch your subscriptions. (Order matters: a subscribable defined *before* this step
+   binds to the built-in templates instead, and you'd have to switch it afterward with
+   `set-untemplates`.) You can edit the templates now or anytime later — see "Styling
+   untemplates" below.
+
+6. **Add feeds and define subscribables** (examples — see `--help` for each). Because of the
+   previous step, your email subscribables bind to your editable local templates:
 
    ```bash
    docker compose run --rm feedletter add-feed https://example.com/feed.xml
    docker compose run --rm feedletter define-email-subscribable --help
    ```
 
-6. **Start the stack.**
+7. **Start the stack.**
 
    ```bash
    docker compose up -d
@@ -123,6 +141,32 @@ so it works from any directory). Note this is `up --build`, **not** `docker comp
 restart`: only rebuilding the image and recreating the container picks up your changes;
 `restart` would re-run the old one. Extra args are forwarded, e.g. `./rebuild-redeploy
 --no-cache`.
+
+## Customizing the email templates
+
+Your editable email templates live in `untemplate/local/subscription/email/` — the starter
+set you scaffolded in **Setup (step 5)**. They're verbatim copies of this feedletter
+version's defaults (including `style.css.untemplate`, the main styling lever), extracted
+from the jar, so there's nothing to keep in sync by hand. To customize:
+
+1. Edit the untemplates (preview them live with `./feedletter-style-docker`, below).
+2. Redeploy with `./rebuild-redeploy`.
+
+Because your subscribables were defined against these `local.subscription.email.*`
+templates, edits take effect on redeploy **without redefining any subscription**.
+
+If you skipped the Setup scaffolding step, run it now and rebuild:
+
+```bash
+docker compose run --rm -v "$PWD/untemplate:/app/untemplate" feedletter generate-starter-untemplates
+./rebuild-redeploy
+```
+
+`generate-starter-untemplates` never clobbers your work — it skips files you've already
+created and aborts if one would differ — so re-running it (e.g. after a feedletter upgrade,
+to pick up newly added templates) is safe. One caveat: any subscribable you defined
+*before* scaffolding stays bound to the built-in templates; point it at the local versions
+with `set-untemplates`.
 
 ## Styling untemplates (live preview)
 
