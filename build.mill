@@ -28,7 +28,7 @@ object `package` extends UntemplateModule {
   )
 
   def mvnDeps = Seq(
-    mvn"com.mchange::feedletter:0.2.3"
+    mvn"com.mchange::feedletter:0.2.4-SNAPSHOT"
   )
 
   // we'll build an index!
