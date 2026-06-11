@@ -84,7 +84,7 @@ Practically, that means:
    ```
 
    This writes editable copies of feedletter's default email untemplates (including
-   `style.css.untemplate`) to `untemplate/default/subscription/email/`, then bakes them into
+   `style.css.untemplate`) to `untemplate/starter/subscription/email/`, then bakes them into
    the image. Email subscribables you define from here on **bind to these editable templates**,
    so you can restyle later just by editing them and running `./rebuild-redeploy` — no need
    to touch your subscriptions. (Order matters: a subscribable defined *before* this step
@@ -144,7 +144,7 @@ restart`: only rebuilding the image and recreating the container picks up your c
 
 ## Customizing the email templates
 
-Your editable email templates live in `untemplate/default/subscription/email/` — the starter
+Your editable email templates live in `untemplate/starter/subscription/email/` — the starter
 set you scaffolded in **Setup (step 5)**. They're verbatim copies of this feedletter
 version's defaults (including `style.css.untemplate`, the main styling lever), extracted
 from the jar, so there's nothing to keep in sync by hand. To customize:
@@ -152,7 +152,7 @@ from the jar, so there's nothing to keep in sync by hand. To customize:
 1. Edit the untemplates (preview them live with `./feedletter-style-docker`, below).
 2. Redeploy with `./rebuild-redeploy`.
 
-Because your subscribables were defined against these `default.subscription.email.*`
+Because your subscribables were defined against these `starter.subscription.email.*`
 templates, edits take effect on redeploy **without redefining any subscription**.
 
 If you skipped the Setup scaffolding step, run it now and rebuild:
@@ -165,7 +165,7 @@ docker compose run --rm -v "$PWD/untemplate:/app/untemplate" feedletter generate
 `generate-starter-untemplates` never clobbers your work — it skips files you've already
 created and aborts if one would differ — so re-running it (e.g. after a feedletter upgrade,
 to pick up newly added templates) is safe. One caveat: any subscribable you defined
-*before* scaffolding stays bound to the built-in templates; point it at the scaffolded `default.subscription.email` versions
+*before* scaffolding stays bound to the built-in templates; point it at the scaffolded `starter.subscription.email` versions
 with `set-untemplates`.
 
 ## Styling untemplates (live preview)
